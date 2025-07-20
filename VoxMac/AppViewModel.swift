@@ -19,6 +19,14 @@ enum AppStatus {
 class AppViewModel: ObservableObject {
     @Published var status: AppStatus = .idle
     
+    private let audioRecorder = AudioRecorderManager()
+    private let transcriptionService: TranscriptionService
+    private var currentRecordingURL: URL?
+    
+    init(transcriptionService: TranscriptionService = MockTranscriptionService()) {
+        self.transcriptionService = transcriptionService
+    }
+    
     var isRecording: Bool {
         if case .recording = status {
             return true
@@ -57,9 +65,9 @@ class AppViewModel: ObservableObject {
         
         switch status {
         case .idle:
-            startRecording()
+            Task { await startRecording() }
         case .recording:
-            stopRecording()
+            Task { await stopRecording() }
         case .processing:
             break
         case .error:
@@ -67,18 +75,42 @@ class AppViewModel: ObservableObject {
         }
     }
     
-    private func startRecording() {
-        print("Recording started")
+    private func startRecording() async {
+        print("Starting recording...")
         status = .recording
+        
+        do {
+            currentRecordingURL = try await audioRecorder.startRecording()
+            print("Recording started successfully")
+        } catch {
+            print("Failed to start recording: \(error)")
+            status = .error(message: error.localizedDescription)
+        }
     }
     
-    private func stopRecording() {
-        print("Recording stopped")
+    private func stopRecording() async {
+        print("Stopping recording...")
         status = .processing
         
-        Task {
-            try await Task.sleep(for: .seconds(2))
+        guard let recordingURL = audioRecorder.stopRecording() else {
+            status = .error(message: "No recording to stop")
+            return
+        }
+        
+        await performTranscription(audioURL: recordingURL)
+    }
+    
+    private func performTranscription(audioURL: URL) async {
+        do {
+            let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
+            print("Transcription completed: \(transcribedText)")
+            
+            TextInsertionManager.insertText(transcribedText)
+            
             status = .idle
+        } catch {
+            print("Transcription failed: \(error)")
+            status = .error(message: error.localizedDescription)
         }
     }
 }
