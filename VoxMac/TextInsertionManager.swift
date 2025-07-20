@@ -6,15 +6,17 @@
 //
 
 import Foundation
-import AppKit
+import Cocoa
 import ApplicationServices
 
 class TextInsertionManager {
     
     static func insertText(_ text: String) {
         print("Attempting to insert text: \(text)")
+        let hasPermissions = hasAccessibilityPermissions()
+        print("Accessibility permission check: \(hasPermissions ? "Granted" : "Denied")")
         
-        if hasAccessibilityPermissions() {
+        if hasPermissions {
             print("✅ Accessibility permissions granted - using direct text insertion")
             insertTextViaAccessibility(text)
         } else {
@@ -46,12 +48,12 @@ class TextInsertionManager {
                 // Try to set the value directly
                 let textCFString = text as CFString
                 let result = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, textCFString)
-                print("🔧 Set value result: \(result.rawValue)")
+                print("🔧 Set value result: \(result) (code: \(result.rawValue))")
                 
                 if result == .success {
                     print("✅ Text inserted successfully via Accessibility")
                 } else {
-                    print("❌ Failed to insert text via Accessibility (error \(result.rawValue)), falling back to clipboard")
+                    print("❌ Failed to set AXValue attribute: \(result). Falling back to clipboard. (Common if target app doesn't support direct insertion)")
                     insertTextViaClipboard(text)
                 }
             } else {
@@ -107,7 +109,11 @@ class TextInsertionManager {
     }
     
     static func requestAccessibilityPermissions() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
-        let _ = AXIsProcessTrustedWithOptions(options)
+        // On modern macOS, it's more reliable and user-friendly to open
+        // System Settings directly to the correct pane.
+        let urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
     }
 }
