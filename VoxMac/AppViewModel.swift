@@ -23,6 +23,8 @@ class AppViewModel: ObservableObject {
     private let transcriptionService: TranscriptionService
     private var currentRecordingURL: URL?
     private var recordingStartTime: Date?
+    private let errorHandler = ErrorHandler.shared
+    private let notificationManager = NotificationManager.shared
     
     init(transcriptionService: TranscriptionService? = nil) {
         if let service = transcriptionService {
@@ -87,6 +89,15 @@ class AppViewModel: ObservableObject {
     
     private func startRecording() async {
         print("Starting recording...")
+        
+        // Check network connectivity for transcription services
+        if !errorHandler.validateNetworkConnectivity() {
+            notificationManager.showWarning(
+                title: "No Internet Connection",
+                message: "Recording will work, but transcription requires internet"
+            )
+        }
+        
         status = .recording
         recordingStartTime = Date()
         
@@ -97,6 +108,7 @@ class AppViewModel: ObservableObject {
             print("Failed to start recording: \(error)")
             status = .error(message: error.localizedDescription)
             recordingStartTime = nil
+            errorHandler.handleRecordingError(error)
         }
     }
     
@@ -127,16 +139,20 @@ class AppViewModel: ObservableObject {
             }
             
             // Insert text into active application
-            TextInsertionManager.insertText(transcribedText)
+            let insertionMethod = TextInsertionManager.insertText(transcribedText)
             
             // Save transcription to history
             HistoryManager.shared.saveTranscription(text: transcribedText, duration: duration)
+            
+            // Show success notification
+            notificationManager.showTranscriptionComplete(transcribedText, insertedVia: insertionMethod)
             
             status = .idle
         } catch {
             print("Transcription failed: \(error)")
             status = .error(message: error.localizedDescription)
             recordingStartTime = nil
+            await errorHandler.handleTranscriptionError(error, audioURL: audioURL)
         }
     }
 }

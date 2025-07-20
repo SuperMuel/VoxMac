@@ -11,17 +11,18 @@ import ApplicationServices
 
 class TextInsertionManager {
     
-    static func insertText(_ text: String) {
+    static func insertText(_ text: String) -> String {
         print("Attempting to insert text: \(text)")
         let hasPermissions = hasAccessibilityPermissions()
         print("Accessibility permission check: \(hasPermissions ? "Granted" : "Denied")")
         
         if hasPermissions {
             print("✅ Accessibility permissions granted - using direct text insertion")
-            insertTextViaAccessibility(text)
+            return insertTextViaAccessibilitySync(text)
         } else {
             print("⚠️ Accessibility permissions not granted - falling back to clipboard")
             insertTextViaClipboard(text)
+            return "clipboard"
         }
     }
     
@@ -30,36 +31,44 @@ class TextInsertionManager {
         return AXIsProcessTrustedWithOptions(options)
     }
     
-    private static func insertTextViaAccessibility(_ text: String) {
+    private static func insertTextViaAccessibilitySync(_ text: String) -> String {
         print("🔧 Inserting text via Accessibility APIs")
         
-        DispatchQueue.main.async {
-            // Get the currently focused element
-            var focusedElement: CFTypeRef?
-            let systemWideElement = AXUIElementCreateSystemWide()
-            
-            print("🔍 Getting focused UI element...")
-            let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
-            print("🔍 Focus result: \(focusResult.rawValue)")
-            
-            if focusResult == .success, let element = focusedElement {
-                print("✅ Found focused element, attempting to set text...")
-                
-                // Try to set the value directly
-                let textCFString = text as CFString
-                let result = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, textCFString)
-                print("🔧 Set value result: \(result) (code: \(result.rawValue))")
-                
-                if result == .success {
-                    print("✅ Text inserted successfully via Accessibility")
-                } else {
-                    print("❌ Failed to set AXValue attribute: \(result). Falling back to clipboard. (Common if target app doesn't support direct insertion)")
-                    insertTextViaClipboard(text)
-                }
-            } else {
-                print("❌ Could not get focused element (error \(focusResult.rawValue)), falling back to clipboard")
-                insertTextViaClipboard(text)
+        // Perform accessibility insertion synchronously on main thread
+        guard Thread.isMainThread else {
+            return DispatchQueue.main.sync {
+                return insertTextViaAccessibilitySync(text)
             }
+        }
+        
+        // Get the currently focused element
+        var focusedElement: CFTypeRef?
+        let systemWideElement = AXUIElementCreateSystemWide()
+        
+        print("🔍 Getting focused UI element...")
+        let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
+        print("🔍 Focus result: \(focusResult.rawValue)")
+        
+        if focusResult == .success, let element = focusedElement {
+            print("✅ Found focused element, attempting to set text...")
+            
+            // Try to set the value directly
+            let textCFString = text as CFString
+            let result = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, textCFString)
+            print("🔧 Set value result: \(result) (code: \(result.rawValue))")
+            
+            if result == .success {
+                print("✅ Text inserted successfully via Accessibility")
+                return "accessibility"
+            } else {
+                print("❌ Failed to set AXValue attribute: \(result). Falling back to clipboard. (Common if target app doesn't support direct insertion)")
+                insertTextViaClipboard(text)
+                return "clipboard (accessibility fallback)"
+            }
+        } else {
+            print("❌ Could not get focused element (error \(focusResult.rawValue)), falling back to clipboard")
+            insertTextViaClipboard(text)
+            return "clipboard (no focus)"
         }
     }
     
@@ -86,9 +95,6 @@ class TextInsertionManager {
             cmdVDown?.post(tap: .cghidEventTap)
             cmdVUp?.post(tap: .cghidEventTap)
             
-            // Show notification to user
-            showClipboardNotification()
-            
             // Restore original clipboard after a delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 if let original = originalContent {
@@ -97,15 +103,6 @@ class TextInsertionManager {
                 }
             }
         }
-    }
-    
-    private static func showClipboardNotification() {
-        let notification = NSUserNotification()
-        notification.title = "VoxMac"
-        notification.informativeText = "Transcription copied to clipboard and pasted"
-        notification.soundName = NSUserNotificationDefaultSoundName
-        
-        NSUserNotificationCenter.default.deliver(notification)
     }
     
     static func requestAccessibilityPermissions() {

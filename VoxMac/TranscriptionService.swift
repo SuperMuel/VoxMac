@@ -30,6 +30,13 @@ class OpenAITranscriptionService: TranscriptionService {
             throw TranscriptionError.audioFileNotFound
         }
         
+        // Check file size (OpenAI has a 25MB limit)
+        let fileSize = try FileManager.default.attributesOfItem(atPath: audioURL.path)[.size] as? Int64 ?? 0
+        let maxFileSize: Int64 = 25 * 1024 * 1024 // 25MB
+        guard fileSize <= maxFileSize else {
+            throw TranscriptionError.fileTooLarge(fileSize, maxFileSize)
+        }
+        
         let url = URL(string: apiURL)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -49,19 +56,27 @@ class OpenAITranscriptionService: TranscriptionService {
                 throw TranscriptionError.invalidResponse
             }
             
-            guard httpResponse.statusCode == 200 else {
-                if httpResponse.statusCode == 401 {
-                    throw TranscriptionError.invalidAPIKey
-                }
+            switch httpResponse.statusCode {
+            case 200:
+                let transcriptionResponse = try JSONDecoder().decode(OpenAITranscriptionResponse.self, from: data)
+                print("OpenAI transcription completed: \(transcriptionResponse.text)")
+                return transcriptionResponse.text
+            case 401:
+                throw TranscriptionError.invalidAPIKey
+            case 413:
+                throw TranscriptionError.fileTooLarge(fileSize, maxFileSize)
+            case 429:
+                throw TranscriptionError.rateLimitExceeded
+            case 500...599:
+                throw TranscriptionError.serverError(httpResponse.statusCode)
+            default:
                 throw TranscriptionError.networkError(NSError(domain: "HTTPError", code: httpResponse.statusCode))
             }
             
-            let transcriptionResponse = try JSONDecoder().decode(OpenAITranscriptionResponse.self, from: data)
-            print("OpenAI transcription completed: \(transcriptionResponse.text)")
-            return transcriptionResponse.text
-            
         } catch let error as TranscriptionError {
             throw error
+        } catch let error as URLError where error.code == .notConnectedToInternet {
+            throw TranscriptionError.noInternetConnection
         } catch {
             throw TranscriptionError.networkError(error)
         }
@@ -102,6 +117,10 @@ enum TranscriptionError: LocalizedError {
     case networkError(Error)
     case invalidResponse
     case audioFileNotFound
+    case fileTooLarge(Int64, Int64)
+    case rateLimitExceeded
+    case serverError(Int)
+    case noInternetConnection
     
     var errorDescription: String? {
         switch self {
@@ -113,6 +132,16 @@ enum TranscriptionError: LocalizedError {
             return "Invalid response from transcription service"
         case .audioFileNotFound:
             return "Audio file not found"
+        case .fileTooLarge(let size, let maxSize):
+            let sizeMB = Double(size) / (1024 * 1024)
+            let maxSizeMB = Double(maxSize) / (1024 * 1024)
+            return "Audio file too large (\(String(format: "%.1f", sizeMB))MB). Maximum size is \(String(format: "%.0f", maxSizeMB))MB"
+        case .rateLimitExceeded:
+            return "Rate limit exceeded. Please try again later"
+        case .serverError(let code):
+            return "Server error (code \(code)). Please try again later"
+        case .noInternetConnection:
+            return "No internet connection available"
         }
     }
 }
