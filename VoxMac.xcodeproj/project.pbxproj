@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FE3436762E2D4418002A81F6 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = FE3436752E2D4418002A81F6 /* GRDB */; };
 		FEF2867E2E2D27B600792E11 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = FEF2867D2E2D27B600792E11 /* KeyboardShortcuts */; };
 /* End PBXBuildFile section */
 
@@ -70,6 +71,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FEF2867E2E2D27B600792E11 /* KeyboardShortcuts in Frameworks */,
+				FE3436762E2D4418002A81F6 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +141,7 @@
 			name = VoxMac;
 			packageProductDependencies = (
 				FEF2867D2E2D27B600792E11 /* KeyboardShortcuts */,
+				FE3436752E2D4418002A81F6 /* GRDB */,
 			);
 			productName = VoxMac;
 			productReference = FEF286362E2D1B2A00792E11 /* VoxMac.app */;
@@ -224,6 +227,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				FEF286712E2D226C00792E11 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				FE3435FE2E2D40F8002A81F6 /* XCRemoteSwiftPackageReference "GRDB" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FEF286372E2D1B2A00792E11 /* Products */;
@@ -581,6 +585,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		FE3435FE2E2D40F8002A81F6 /* XCRemoteSwiftPackageReference "GRDB" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 		FEF286712E2D226C00792E11 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
@@ -592,6 +604,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		FE3436752E2D4418002A81F6 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE3435FE2E2D40F8002A81F6 /* XCRemoteSwiftPackageReference "GRDB" */;
+			productName = GRDB;
+		};
 		FEF2867D2E2D27B600792E11 /* KeyboardShortcuts */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FEF286712E2D226C00792E11 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;

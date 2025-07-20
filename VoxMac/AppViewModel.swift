@@ -22,6 +22,7 @@ class AppViewModel: ObservableObject {
     private let audioRecorder = AudioRecorderManager()
     private let transcriptionService: TranscriptionService
     private var currentRecordingURL: URL?
+    private var recordingStartTime: Date?
     
     init(transcriptionService: TranscriptionService? = nil) {
         if let service = transcriptionService {
@@ -87,6 +88,7 @@ class AppViewModel: ObservableObject {
     private func startRecording() async {
         print("Starting recording...")
         status = .recording
+        recordingStartTime = Date()
         
         do {
             currentRecordingURL = try await audioRecorder.startRecording()
@@ -94,6 +96,7 @@ class AppViewModel: ObservableObject {
         } catch {
             print("Failed to start recording: \(error)")
             status = .error(message: error.localizedDescription)
+            recordingStartTime = nil
         }
     }
     
@@ -114,12 +117,26 @@ class AppViewModel: ObservableObject {
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
             print("Transcription completed: \(transcribedText)")
             
+            // Calculate recording duration
+            let duration: TimeInterval?
+            if let startTime = recordingStartTime {
+                duration = Date().timeIntervalSince(startTime)
+                recordingStartTime = nil
+            } else {
+                duration = nil
+            }
+            
+            // Insert text into active application
             TextInsertionManager.insertText(transcribedText)
+            
+            // Save transcription to history
+            HistoryManager.shared.saveTranscription(text: transcribedText, duration: duration)
             
             status = .idle
         } catch {
             print("Transcription failed: \(error)")
             status = .error(message: error.localizedDescription)
+            recordingStartTime = nil
         }
     }
 }

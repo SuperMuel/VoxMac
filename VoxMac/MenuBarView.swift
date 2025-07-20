@@ -10,6 +10,7 @@ import KeyboardShortcuts
 
 struct MenuBarView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @State private var historyWindow: NSWindow?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -49,6 +50,10 @@ struct MenuBarView: View {
             Divider()
             
             // Menu items
+            Button("History...") {
+                openHistoryWindow()
+            }
+            
             SettingsLink {
                 Text("Settings...")
             }
@@ -60,6 +65,27 @@ struct MenuBarView: View {
         }
         .padding(.vertical, 8)
         .frame(minWidth: 200)
+    }
+    
+    private func openHistoryWindow() {
+        // Close existing window if open
+        historyWindow?.close()
+        
+        // Create new window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        window.title = "VoxMac History"
+        window.contentView = NSHostingView(rootView: HistoryView())
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        
+        // Keep reference to prevent deallocation
+        historyWindow = window
     }
     
     private var statusColor: Color {
