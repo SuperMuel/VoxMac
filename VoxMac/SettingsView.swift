@@ -13,6 +13,9 @@ struct SettingsView: View {
     @State private var apiKey: String = ""
     @State private var showingApiKeySaved = false
     @State private var showingApiKeyError = false
+    @State private var showingConnectionResult = false
+    @State private var connectionResultMessage = ""
+    @State private var isTestingConnection = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -63,10 +66,12 @@ struct SettingsView: View {
                     }
                     .disabled(apiKey.isEmpty)
                     
-                    Button("Test Connection") {
-                        testApiConnection()
+                    Button(isTestingConnection ? "Testing..." : "Test Connection") {
+                        Task {
+                            await testApiConnection()
+                        }
                     }
-                    .disabled(apiKey.isEmpty)
+                    .disabled(apiKey.isEmpty || isTestingConnection)
                 }
             }
             
@@ -111,6 +116,11 @@ struct SettingsView: View {
         } message: {
             Text("Failed to save API key. Please try again.")
         }
+        .alert("Connection Test", isPresented: $showingConnectionResult) {
+            Button("OK") { }
+        } message: {
+            Text(connectionResultMessage)
+        }
     }
     
     private func loadApiKey() {
@@ -127,9 +137,35 @@ struct SettingsView: View {
         }
     }
     
-    private func testApiConnection() {
-        // TODO: Implement API connection test
-        print("Testing API connection with key: \(apiKey.prefix(10))...")
+    private func testApiConnection() async {
+        isTestingConnection = true
+        
+        do {
+            // Test API key by making a simple request to OpenAI models endpoint
+            let url = URL(string: "https://api.openai.com/v1/models")!
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            
+            let (_, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw NSError(domain: "InvalidResponse", code: 0)
+            }
+            
+            if httpResponse.statusCode == 200 {
+                connectionResultMessage = "✅ Connection successful! Your API key is working."
+            } else if httpResponse.statusCode == 401 {
+                connectionResultMessage = "❌ Invalid API key. Please check your OpenAI API key."
+            } else {
+                connectionResultMessage = "❌ API error: HTTP \(httpResponse.statusCode)"
+            }
+            
+        } catch {
+            connectionResultMessage = "❌ Connection failed: \(error.localizedDescription)"
+        }
+        
+        isTestingConnection = false
+        showingConnectionResult = true
     }
     
     private var microphonePermissionStatus: String {

@@ -44,12 +44,6 @@ struct MenuBarView: View {
                     }
                 }
                 .padding(.horizontal)
-                
-                Button("Set Shortcut...") {
-                    // This will open settings when implemented
-                    print("Set shortcut clicked")
-                }
-                .padding(.horizontal)
             }
             
             Divider()
