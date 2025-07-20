@@ -55,9 +55,8 @@ struct MenuBarView: View {
             Divider()
             
             // Menu items
-            Button("Settings...") {
-                // TODO: Open settings window
-                print("Settings clicked")
+            SettingsLink {
+                Text("Settings...")
             }
             
             Button("Quit VoxMac") {

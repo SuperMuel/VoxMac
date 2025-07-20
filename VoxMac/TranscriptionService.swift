@@ -7,6 +7,10 @@
 
 import Foundation
 
+struct OpenAITranscriptionResponse: Codable {
+    let text: String
+}
+
 protocol TranscriptionService {
     func transcribe(audioURL: URL) async throws -> String
 }
@@ -22,10 +26,67 @@ class OpenAITranscriptionService: TranscriptionService {
     func transcribe(audioURL: URL) async throws -> String {
         print("Starting OpenAI transcription for: \(audioURL.path)")
         
-        // For now, return a mock response to test the flow
-        // We'll implement the real API call in Phase 3
-        try await Task.sleep(for: .seconds(2))
-        return "This is a mock transcription from OpenAI Whisper API. The audio file was processed successfully."
+        guard FileManager.default.fileExists(atPath: audioURL.path) else {
+            throw TranscriptionError.audioFileNotFound
+        }
+        
+        let url = URL(string: apiURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        
+        // Create multipart form data
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        let httpBody = createMultipartBody(boundary: boundary, audioURL: audioURL)
+        request.httpBody = httpBody
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw TranscriptionError.invalidResponse
+            }
+            
+            guard httpResponse.statusCode == 200 else {
+                if httpResponse.statusCode == 401 {
+                    throw TranscriptionError.invalidAPIKey
+                }
+                throw TranscriptionError.networkError(NSError(domain: "HTTPError", code: httpResponse.statusCode))
+            }
+            
+            let transcriptionResponse = try JSONDecoder().decode(OpenAITranscriptionResponse.self, from: data)
+            print("OpenAI transcription completed: \(transcriptionResponse.text)")
+            return transcriptionResponse.text
+            
+        } catch let error as TranscriptionError {
+            throw error
+        } catch {
+            throw TranscriptionError.networkError(error)
+        }
+    }
+    
+    private func createMultipartBody(boundary: String, audioURL: URL) -> Data {
+        var body = Data()
+        
+        // Add model parameter
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+        body.append("whisper-1\r\n".data(using: .utf8)!)
+        
+        // Add audio file
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(audioURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: audio/m4a\r\n\r\n".data(using: .utf8)!)
+        
+        if let audioData = try? Data(contentsOf: audioURL) {
+            body.append(audioData)
+        }
+        
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        return body
     }
 }
 

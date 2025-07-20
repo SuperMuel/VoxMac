@@ -1,0 +1,67 @@
+//
+//  KeychainManager.swift
+//  VoxMac
+//
+//  Created by Samuel MALLET on 20/07/2025.
+//
+
+import Foundation
+import Security
+
+class KeychainManager {
+    private static let service = "com.voxmac.app"
+    
+    enum Key: String {
+        case openAIAPIKey = "openai_api_key"
+    }
+    
+    static func save(_ value: String, for key: Key) -> Bool {
+        let data = value.data(using: .utf8)!
+        
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key.rawValue,
+            kSecValueData as String: data
+        ]
+        
+        // Delete existing item first
+        SecItemDelete(query as CFDictionary)
+        
+        // Add new item
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess
+    }
+    
+    static func load(key: Key) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key.rawValue,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let string = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        
+        return string
+    }
+    
+    static func delete(key: Key) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key.rawValue
+        ]
+        
+        let status = SecItemDelete(query as CFDictionary)
+        return status == errSecSuccess
+    }
+}

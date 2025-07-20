@@ -25,5 +25,9 @@ struct VoxMacApp: App {
                 }
         }
         .menuBarExtraStyle(.menu)
+        
+        Settings {
+            SettingsView()
+        }
     }
 }

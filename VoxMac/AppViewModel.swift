@@ -23,8 +23,17 @@ class AppViewModel: ObservableObject {
     private let transcriptionService: TranscriptionService
     private var currentRecordingURL: URL?
     
-    init(transcriptionService: TranscriptionService = MockTranscriptionService()) {
-        self.transcriptionService = transcriptionService
+    init(transcriptionService: TranscriptionService? = nil) {
+        if let service = transcriptionService {
+            self.transcriptionService = service
+        } else {
+            // Use OpenAI if API key exists, otherwise use mock
+            if let apiKey = KeychainManager.load(key: .openAIAPIKey), !apiKey.isEmpty {
+                self.transcriptionService = OpenAITranscriptionService(apiKey: apiKey)
+            } else {
+                self.transcriptionService = MockTranscriptionService()
+            }
+        }
     }
     
     var isRecording: Bool {
