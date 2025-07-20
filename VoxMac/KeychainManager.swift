@@ -8,6 +8,29 @@
 import Foundation
 import Security
 
+enum InsertionMethod: String, CaseIterable {
+    case autoInsert = "auto_insert"
+    case clipboardOnly = "clipboard_only"
+    
+    var displayName: String {
+        switch self {
+        case .autoInsert:
+            return "Auto-insert text"
+        case .clipboardOnly:
+            return "Copy to clipboard only"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .autoInsert:
+            return "Automatically insert transcribed text at cursor position"
+        case .clipboardOnly:
+            return "Copy transcribed text to clipboard for manual pasting"
+        }
+    }
+}
+
 class KeychainManager {
     private static let service = "com.voxmac.app"
     
@@ -15,6 +38,7 @@ class KeychainManager {
         case openAIAPIKey = "openai_api_key"
         case mistralAPIKey = "mistral_api_key"
         case transcriptionService = "transcription_service"
+        case insertionMethod = "insertion_method"
     }
     
     static func save(_ value: String, for key: Key) -> Bool {
@@ -66,5 +90,17 @@ class KeychainManager {
         
         let status = SecItemDelete(query as CFDictionary)
         return status == errSecSuccess
+    }
+    
+    static func getInsertionMethod() -> InsertionMethod {
+        guard let value = load(key: .insertionMethod),
+              let method = InsertionMethod(rawValue: value) else {
+            return .autoInsert // Default to auto-insert
+        }
+        return method
+    }
+    
+    static func setInsertionMethod(_ method: InsertionMethod) -> Bool {
+        return save(method.rawValue, for: .insertionMethod)
     }
 }

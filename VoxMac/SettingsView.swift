@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var openAIApiKey: String = ""
     @State private var mistralApiKey: String = ""
     @State private var selectedService: String = "openai"
+    @State private var selectedInsertionMethod: InsertionMethod = .autoInsert
     @State private var showingApiKeySaved = false
     @State private var showingApiKeyError = false
     @State private var showingConnectionResult = false
@@ -56,6 +57,29 @@ struct SettingsView: View {
                     .onChange(of: selectedService) { _, newValue in
                         saveSelectedService(newValue)
                     }
+                }
+                
+                Divider()
+                
+                // Text Insertion Method Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Text Insertion")
+                        .font(.headline)
+                    
+                    Picker("Method:", selection: $selectedInsertionMethod) {
+                        ForEach(InsertionMethod.allCases, id: \.self) { method in
+                            Text(method.displayName).tag(method)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: selectedInsertionMethod) { _, newValue in
+                        saveInsertionMethod(newValue)
+                    }
+                    
+                    Text(selectedInsertionMethod.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 2)
                 }
                 
                 Divider()
@@ -140,6 +164,7 @@ struct SettingsView: View {
         .onAppear {
             loadApiKeys()
             loadSelectedService()
+            loadInsertionMethod()
         }
         .alert("API Key Saved", isPresented: $showingApiKeySaved) {
             Button("OK") { }
@@ -173,6 +198,14 @@ struct SettingsView: View {
     
     private func saveSelectedService(_ service: String) {
         _ = KeychainManager.save(service, for: .transcriptionService)
+    }
+    
+    private func loadInsertionMethod() {
+        selectedInsertionMethod = KeychainManager.getInsertionMethod()
+    }
+    
+    private func saveInsertionMethod(_ method: InsertionMethod) {
+        _ = KeychainManager.setInsertionMethod(method)
     }
     
     private var currentApiKey: String {

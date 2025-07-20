@@ -45,10 +45,26 @@ class NotificationManager: ObservableObject {
     
     func showTranscriptionComplete(_ text: String, insertedVia method: String) {
         let preview = text.count > 50 ? String(text.prefix(50)) + "..." : text
-        showSuccess(
-            title: "Transcription Complete",
-            message: "Text inserted via \(method): \"\(preview)\""
-        )
+        
+        let (title, message) = getNotificationContent(for: method, text: preview)
+        showSuccess(title: title, message: message)
+    }
+    
+    private func getNotificationContent(for method: String, text: String) -> (title: String, message: String) {
+        switch method {
+        case "accessibility":
+            return ("Transcription Complete", "Text inserted at cursor: \"\(text)\"")
+        case "clipboard_only":
+            return ("Transcription Complete", "Text copied to clipboard: \"\(text)\"")
+        case "clipboard":
+            return ("Transcription Complete", "Text pasted via clipboard: \"\(text)\"")
+        case "clipboard (accessibility fallback)":
+            return ("Transcription Complete", "Text pasted via clipboard (accessibility fallback): \"\(text)\"")
+        case "clipboard (no focus)":
+            return ("Transcription Complete", "Text pasted via clipboard (no focus detected): \"\(text)\"")
+        default:
+            return ("Transcription Complete", "Text processed via \(method): \"\(text)\"")
+        }
     }
     
     func showRecordingError(_ error: Error) {

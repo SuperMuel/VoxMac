@@ -168,13 +168,14 @@ class AppViewModel: ObservableObject {
             }
             
             // Insert text into active application
-            let insertionMethod = TextInsertionManager.insertText(transcribedText)
+            let selectedInsertionMethod = KeychainManager.getInsertionMethod()
+            let insertionResult = TextInsertionManager.insertText(transcribedText, method: selectedInsertionMethod)
             
             // Save transcription to history with provider/model info
             HistoryManager.shared.saveTranscription(text: transcribedText, duration: duration, provider: transcriptionService.provider, model: transcriptionService.model)
             
             // Show success notification
-            notificationManager.showTranscriptionComplete(transcribedText, insertedVia: insertionMethod)
+            notificationManager.showTranscriptionComplete(transcribedText, insertedVia: insertionResult)
             
             status = .idle
         } catch {

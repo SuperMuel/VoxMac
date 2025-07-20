@@ -11,7 +11,16 @@ import ApplicationServices
 
 class TextInsertionManager {
     
-    static func insertText(_ text: String) -> String {
+    static func insertText(_ text: String, method: InsertionMethod) -> String {
+        switch method {
+        case .autoInsert:
+            return insertTextWithAutoInsert(text)
+        case .clipboardOnly:
+            return insertTextToClipboardOnly(text)
+        }
+    }
+    
+    private static func insertTextWithAutoInsert(_ text: String) -> String {
         print("Attempting to insert text: \(text)")
         let hasPermissions = hasAccessibilityPermissions()
         print("Accessibility permission check: \(hasPermissions ? "Granted" : "Denied")")
@@ -24,6 +33,18 @@ class TextInsertionManager {
             insertTextViaClipboard(text)
             return "clipboard"
         }
+    }
+    
+    private static func insertTextToClipboardOnly(_ text: String) -> String {
+        print("Copying text to clipboard: \(text)")
+        
+        DispatchQueue.main.async {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+        }
+        
+        return "clipboard_only"
     }
     
     private static func hasAccessibilityPermissions() -> Bool {

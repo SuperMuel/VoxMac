@@ -128,7 +128,8 @@ class ErrorHandler: ObservableObject {
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
             
             // Success - insert text and save to history
-            _ = TextInsertionManager.insertText(transcribedText)
+            let selectedInsertionMethod = KeychainManager.getInsertionMethod()
+            _ = TextInsertionManager.insertText(transcribedText, method: selectedInsertionMethod)
             HistoryManager.shared.saveTranscription(text: transcribedText, provider: transcriptionService.provider, model: transcriptionService.model)
             
             notificationManager.showSuccess(
