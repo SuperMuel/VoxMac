@@ -1,5 +1,5 @@
 {
-  "originHash" : "2371a57042a6e4777171c914747af1cad2aab3b99b18baeb95378dad379eb9e2",
+  "originHash" : "7629d5acebdb680155c5ef9edb22bc0334b9cada112a48c39df80d1e10a135d1",
   "pins" : [
     {
       "identity" : "grdb.swift",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/groue/GRDB.swift",
       "state" : {
         "branch" : "master",
-        "revision" : "a5a1be26b4513dc7ec360eb56bc08a345bac6649"
+        "revision" : "fb68849bfb7a1b0ff80734fed6872364aab6c5d0"
       }
     },
     {
