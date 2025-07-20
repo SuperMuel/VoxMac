@@ -20,122 +20,123 @@ struct SettingsView: View {
     @State private var isTestingConnection = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("VoxMac Settings")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Divider()
-            
-            // Keyboard Shortcut Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Keyboard Shortcut")
-                    .font(.headline)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("VoxMac Settings")
+                    .font(.title2)
+                    .fontWeight(.bold)
                 
-                HStack {
-                    Text("Recording Toggle:")
-                    Spacer()
-                    KeyboardShortcuts.Recorder(for: .toggleRecording)
-                        .frame(width: 150)
-                }
-            }
-            
-            Divider()
-            
-            // Transcription Service Selection
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Transcription Service")
-                    .font(.headline)
+                Divider()
                 
-                Picker("Service:", selection: $selectedService) {
-                    Text("OpenAI Whisper").tag("openai")
-                    Text("Mistral Voxtral").tag("mistral")
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: selectedService) { _, newValue in
-                    saveSelectedService(newValue)
-                }
-            }
-            
-            Divider()
-            
-            // API Configuration Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text(selectedService == "openai" ? "OpenAI Configuration" : "Mistral Configuration")
-                    .font(.headline)
-                
-                if selectedService == "openai" {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("OpenAI API Key:")
-                            .font(.caption)
-                        
-                        SecureField("Enter your OpenAI API key", text: $openAIApiKey)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Text("Get your API key from https://platform.openai.com/api-keys")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Mistral API Key:")
-                            .font(.caption)
-                        
-                        SecureField("Enter your Mistral API key", text: $mistralApiKey)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Text("Get your API key from https://console.mistral.ai/")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                HStack {
-                    Button("Save API Key") {
-                        saveApiKey()
-                    }
-                    .disabled(currentApiKey.isEmpty)
+                // Keyboard Shortcut Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Keyboard Shortcut")
+                        .font(.headline)
                     
-                    Button(isTestingConnection ? "Testing..." : "Test Connection") {
-                        Task {
-                            await testApiConnection()
+                    HStack {
+                        Text("Recording Toggle:")
+                        Spacer()
+                        KeyboardShortcuts.Recorder(for: .toggleRecording)
+                            .frame(width: 150)
+                    }
+                }
+                
+                Divider()
+                
+                // Transcription Service Selection
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Transcription Service")
+                        .font(.headline)
+                    
+                    Picker("Service:", selection: $selectedService) {
+                        Text("OpenAI Whisper").tag("openai")
+                        Text("Mistral Voxtral").tag("mistral")
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: selectedService) { _, newValue in
+                        saveSelectedService(newValue)
+                    }
+                }
+                
+                Divider()
+                
+                // API Configuration Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(selectedService == "openai" ? "OpenAI Configuration" : "Mistral Configuration")
+                        .font(.headline)
+                    
+                    if selectedService == "openai" {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("OpenAI API Key:")
+                                .font(.caption)
+                            
+                            SecureField("Enter your OpenAI API key", text: $openAIApiKey)
+                                .textFieldStyle(.roundedBorder)
+                            
+                            Text("Get your API key from https://platform.openai.com/api-keys")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Mistral API Key:")
+                                .font(.caption)
+                            
+                            SecureField("Enter your Mistral API key", text: $mistralApiKey)
+                                .textFieldStyle(.roundedBorder)
+                            
+                            Text("Get your API key from https://console.mistral.ai/")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                     }
-                    .disabled(currentApiKey.isEmpty || isTestingConnection)
+                    
+                    HStack {
+                        Button("Save API Key") {
+                            saveApiKey()
+                        }
+                        .disabled(currentApiKey.isEmpty)
+                        
+                        Button(isTestingConnection ? "Testing..." : "Test Connection") {
+                            Task {
+                                await testApiConnection()
+                            }
+                        }
+                        .disabled(currentApiKey.isEmpty || isTestingConnection)
+                    }
+                }
+                
+                Divider()
+                
+                // Permissions Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Permissions")
+                        .font(.headline)
+                    
+                    HStack {
+                        Text("Microphone Access:")
+                        Spacer()
+                        Text(microphonePermissionStatus)
+                            .foregroundColor(microphonePermissionColor)
+                    }
+                    
+                    HStack {
+                        Text("Accessibility Access:")
+                        Spacer()
+                        Text(accessibilityPermissionStatus)
+                            .foregroundColor(accessibilityPermissionColor)
+                    }
+                    
+                    Button("Request Accessibility Permissions") {
+                        TextInsertionManager.requestAccessibilityPermissions()
+                    }
+                    .disabled(hasAccessibilityPermissions)
                 }
             }
-            
-            Divider()
-            
-            // Permissions Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Permissions")
-                    .font(.headline)
-                
-                HStack {
-                    Text("Microphone Access:")
-                    Spacer()
-                    Text(microphonePermissionStatus)
-                        .foregroundColor(microphonePermissionColor)
-                }
-                
-                HStack {
-                    Text("Accessibility Access:")
-                    Spacer()
-                    Text(accessibilityPermissionStatus)
-                        .foregroundColor(accessibilityPermissionColor)
-                }
-                
-                Button("Request Accessibility Permissions") {
-                    TextInsertionManager.requestAccessibilityPermissions()
-                }
-                .disabled(hasAccessibilityPermissions)
-            }
-            
-            Spacer()
+            .padding(20)
         }
-        .padding(20)
-        .frame(width: 500, height: 450)
+        .frame(width:500)
+        .frame(minHeight: 450, maxHeight: 600)
         .onAppear {
             loadApiKeys()
             loadSelectedService()
