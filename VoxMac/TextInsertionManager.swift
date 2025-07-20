@@ -15,8 +15,10 @@ class TextInsertionManager {
         print("Attempting to insert text: \(text)")
         
         if hasAccessibilityPermissions() {
+            print("✅ Accessibility permissions granted - using direct text insertion")
             insertTextViaAccessibility(text)
         } else {
+            print("⚠️ Accessibility permissions not granted - falling back to clipboard")
             insertTextViaClipboard(text)
         }
     }
@@ -27,28 +29,33 @@ class TextInsertionManager {
     }
     
     private static func insertTextViaAccessibility(_ text: String) {
-        print("Inserting text via Accessibility APIs")
+        print("🔧 Inserting text via Accessibility APIs")
         
         DispatchQueue.main.async {
             // Get the currently focused element
             var focusedElement: CFTypeRef?
             let systemWideElement = AXUIElementCreateSystemWide()
             
-            if AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
-               let element = focusedElement {
+            print("🔍 Getting focused UI element...")
+            let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
+            print("🔍 Focus result: \(focusResult.rawValue)")
+            
+            if focusResult == .success, let element = focusedElement {
+                print("✅ Found focused element, attempting to set text...")
                 
                 // Try to set the value directly
                 let textCFString = text as CFString
                 let result = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, textCFString)
+                print("🔧 Set value result: \(result.rawValue)")
                 
                 if result == .success {
-                    print("Text inserted successfully via Accessibility")
+                    print("✅ Text inserted successfully via Accessibility")
                 } else {
-                    print("Failed to insert text via Accessibility, falling back to clipboard")
+                    print("❌ Failed to insert text via Accessibility (error \(result.rawValue)), falling back to clipboard")
                     insertTextViaClipboard(text)
                 }
             } else {
-                print("Could not get focused element, falling back to clipboard")
+                print("❌ Could not get focused element (error \(focusResult.rawValue)), falling back to clipboard")
                 insertTextViaClipboard(text)
             }
         }
