@@ -20,25 +20,15 @@ class AppViewModel: ObservableObject {
     @Published var status: AppStatus = .idle
     
     private let audioRecorder = AudioRecorderManager()
-    private let transcriptionService: TranscriptionService
     private var currentRecordingURL: URL?
     private var recordingStartTime: Date?
     private let errorHandler = ErrorHandler.shared
     private let notificationManager = NotificationManager.shared
     private var isCleaningUp = false
     
-    init(transcriptionService: TranscriptionService? = nil) {
-        if let service = transcriptionService {
-            self.transcriptionService = service
-        } else {
-            do {
-                self.transcriptionService = try Self.createTranscriptionService()
-            } catch {
-                // Fallback to mock service for initialization, but transcription will fail properly
-                self.transcriptionService = MockTranscriptionService()
-                print("⚠️ Failed to create transcription service: \(error)")
-            }
-        }
+    init() {
+        // No longer store transcription service as instance variable
+        // It will be created fresh for each transcription
     }
     
     private static func createTranscriptionService() throws -> TranscriptionService {
@@ -157,6 +147,8 @@ class AppViewModel: ObservableObject {
         }
         
         do {
+            // Create transcription service dynamically to pick up current settings
+            let transcriptionService = try Self.createTranscriptionService()
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
             print("Transcription completed: \(transcribedText)")
             
