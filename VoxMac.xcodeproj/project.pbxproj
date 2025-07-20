@@ -29,9 +29,22 @@
 		FEF2864E2E2D1B2C00792E11 /* VoxMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoxMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FEF286752E2D253300792E11 /* Exceptions for "VoxMac" folder in "VoxMac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FEF286352E2D1B2A00792E11 /* VoxMac */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FEF286382E2D1B2A00792E11 /* VoxMac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FEF286752E2D253300792E11 /* Exceptions for "VoxMac" folder in "VoxMac" target */,
+			);
 			path = VoxMac;
 			sourceTree = "<group>";
 		};
@@ -195,6 +208,9 @@
 			);
 			mainGroup = FEF2862D2E2D1B2A00792E11;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FEF286712E2D226C00792E11 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FEF286372E2D1B2A00792E11 /* Products */;
 			projectDirPath = "";
@@ -398,7 +414,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoxMac/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "VoxMAC needs to record your voice for transcription.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -424,7 +442,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoxMac/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "VoxMAC needs to record your voice for transcription.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -545,6 +565,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FEF286712E2D226C00792E11 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = FEF2862E2E2D1B2A00792E11 /* Project object */;
 }
