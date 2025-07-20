@@ -50,21 +50,57 @@ class TextInsertionManager {
         print("🔍 Focus result: \(focusResult.rawValue)")
         
         if focusResult == .success, let element = focusedElement {
-            print("✅ Found focused element, attempting to set text...")
+            let axElement = element as! AXUIElement
+            print("✅ Found focused element, attempting to insert text...")
             
-            // Try to set the value directly
-            let textCFString = text as CFString
-            let result = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, textCFString)
-            print("🔧 Set value result: \(result) (code: \(result.rawValue))")
+            // Step 1: Get current selected range
+            var selectedRangeValue: CFTypeRef?
+            let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &selectedRangeValue)
             
-            if result == .success {
-                print("✅ Text inserted successfully via Accessibility")
-                return "accessibility"
-            } else {
-                print("❌ Failed to set AXValue attribute: \(result). Falling back to clipboard. (Common if target app doesn't support direct insertion)")
-                insertTextViaClipboard(text)
-                return "clipboard (accessibility fallback)"
+            if rangeResult == .success, let rangeAXValue = selectedRangeValue, AXValueGetType(rangeAXValue as! AXValue) == .cfRange {
+                var cfRange = CFRange()
+                AXValueGetValue(rangeAXValue as! AXValue, .cfRange, &cfRange)
+                let location = cfRange.location
+                let length = cfRange.length
+                print("📍 Current selection: location=\(location), length=\(length)")
+                
+                // Step 2: Get current text value
+                var currentValue: CFTypeRef?
+                let valueResult = AXUIElementCopyAttributeValue(axElement, kAXValueAttribute as CFString, &currentValue)
+                
+                if valueResult == .success, var currentText = currentValue as? String {
+                    print("📝 Current text length: \(currentText.count)")
+                    
+                    // Step 3: Replace selected range with new text
+                    if let startIndex = currentText.index(currentText.startIndex, offsetBy: location, limitedBy: currentText.endIndex),
+                       let endIndex = currentText.index(startIndex, offsetBy: length, limitedBy: currentText.endIndex) {
+                        currentText.replaceSubrange(startIndex..<endIndex, with: text)
+                        
+                        // Step 4: Set new text value
+                        let setValueResult = AXUIElementSetAttributeValue(axElement, kAXValueAttribute as CFString, currentText as CFString)
+                        print("🔧 Set value result: \(setValueResult.rawValue)")
+                        
+                        if setValueResult == .success {
+                            // Step 5: Update selection range to after inserted text (cursor at end of insertion)
+                            let newLocation = location + text.count
+                            var newRange = CFRangeMake(newLocation, 0)
+                            if let newRangeValue = AXValueCreate(.cfRange, &newRange) {
+                                let setRangeResult = AXUIElementSetAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, newRangeValue)
+                                print("📍 Set new selection result: \(setRangeResult.rawValue)")
+                                
+                                if setRangeResult == .success {
+                                    print("✅ Text inserted successfully via Accessibility at cursor")
+                                    return "accessibility"
+                                }
+                            }
+                        }
+                    }
+                }
             }
+            
+            print("❌ Accessibility insertion failed (unsupported element or error). Falling back to clipboard.")
+            insertTextViaClipboard(text)
+            return "clipboard (accessibility fallback)"
         } else {
             print("❌ Could not get focused element (error \(focusResult.rawValue)), falling back to clipboard")
             insertTextViaClipboard(text)
