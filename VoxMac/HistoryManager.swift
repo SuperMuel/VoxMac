@@ -34,6 +34,8 @@ class HistoryManager: ObservableObject {
                     t.column("text", .text).notNull()
                     t.column("timestamp", .datetime).notNull()
                     t.column("duration", .double)
+                    t.column("provider", .text).notNull()
+                    t.column("model", .text).notNull()
                 }
             }
             
@@ -43,13 +45,13 @@ class HistoryManager: ObservableObject {
         }
     }
     
-    func saveTranscription(text: String, duration: TimeInterval? = nil) {
+    func saveTranscription(text: String, duration: TimeInterval? = nil, provider: String, model: String) {
         guard let dbQueue = dbQueue else {
             print("❌ Database not available")
             return
         }
         
-        var record = TranscriptionRecord(text: text, duration: duration)
+        var record = TranscriptionRecord(text: text, duration: duration, provider: provider, model: model)
         
         do {
             _ = try dbQueue.write { db in

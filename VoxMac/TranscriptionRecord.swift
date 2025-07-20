@@ -13,12 +13,16 @@ struct TranscriptionRecord: Codable {
     let text: String
     let timestamp: Date
     let duration: TimeInterval?
+    let provider: String
+    let model: String
     
-    init(text: String, timestamp: Date = Date(), duration: TimeInterval? = nil) {
+    init(text: String, timestamp: Date = Date(), duration: TimeInterval? = nil, provider: String, model: String) {
         self.id = UUID()
         self.text = text
         self.timestamp = timestamp
         self.duration = duration
+        self.provider = provider
+        self.model = model
     }
 }
 
@@ -31,6 +35,8 @@ extension TranscriptionRecord: FetchableRecord, MutablePersistableRecord {
         static let text = Column(CodingKeys.text)
         static let timestamp = Column(CodingKeys.timestamp)
         static let duration = Column(CodingKeys.duration)
+        static let provider = Column(CodingKeys.provider)
+        static let model = Column(CodingKeys.model)
     }
     
     // Custom encoding for UUID to store as string
@@ -39,6 +45,8 @@ extension TranscriptionRecord: FetchableRecord, MutablePersistableRecord {
         container[Columns.text] = text
         container[Columns.timestamp] = timestamp
         container[Columns.duration] = duration
+        container[Columns.provider] = provider
+        container[Columns.model] = model
     }
     
     // Custom decoding for UUID from string
@@ -48,6 +56,8 @@ extension TranscriptionRecord: FetchableRecord, MutablePersistableRecord {
         self.text = row[Columns.text]
         self.timestamp = row[Columns.timestamp]
         self.duration = row[Columns.duration]
+        self.provider = row[Columns.provider]
+        self.model = row[Columns.model]
     }
 }
 

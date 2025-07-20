@@ -10,7 +10,9 @@ import KeyboardShortcuts
 import AVFoundation
 
 struct SettingsView: View {
-    @State private var apiKey: String = ""
+    @State private var openAIApiKey: String = ""
+    @State private var mistralApiKey: String = ""
+    @State private var selectedService: String = "openai"
     @State private var showingApiKeySaved = false
     @State private var showingApiKeyError = false
     @State private var showingConnectionResult = false
@@ -40,38 +42,66 @@ struct SettingsView: View {
             
             Divider()
             
-            // API Configuration Section
+            // Transcription Service Selection
             VStack(alignment: .leading, spacing: 8) {
-                Text("OpenAI Configuration")
+                Text("Transcription Service")
                     .font(.headline)
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("API Key:")
-                        .font(.caption)
-                    
-                    SecureField("Enter your OpenAI API key", text: $apiKey)
-                        .textFieldStyle(.roundedBorder)
-                        .onAppear {
-                            loadApiKey()
-                        }
-                    
-                    Text("Get your API key from https://platform.openai.com/api-keys")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                Picker("Service:", selection: $selectedService) {
+                    Text("OpenAI Whisper").tag("openai")
+                    Text("Mistral Voxtral").tag("mistral")
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: selectedService) { _, newValue in
+                    saveSelectedService(newValue)
+                }
+            }
+            
+            Divider()
+            
+            // API Configuration Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text(selectedService == "openai" ? "OpenAI Configuration" : "Mistral Configuration")
+                    .font(.headline)
+                
+                if selectedService == "openai" {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("OpenAI API Key:")
+                            .font(.caption)
+                        
+                        SecureField("Enter your OpenAI API key", text: $openAIApiKey)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Text("Get your API key from https://platform.openai.com/api-keys")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Mistral API Key:")
+                            .font(.caption)
+                        
+                        SecureField("Enter your Mistral API key", text: $mistralApiKey)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Text("Get your API key from https://console.mistral.ai/")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 HStack {
                     Button("Save API Key") {
                         saveApiKey()
                     }
-                    .disabled(apiKey.isEmpty)
+                    .disabled(currentApiKey.isEmpty)
                     
                     Button(isTestingConnection ? "Testing..." : "Test Connection") {
                         Task {
                             await testApiConnection()
                         }
                     }
-                    .disabled(apiKey.isEmpty || isTestingConnection)
+                    .disabled(currentApiKey.isEmpty || isTestingConnection)
                 }
             }
             
@@ -105,11 +135,15 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(20)
-        .frame(width: 500, height: 400)
+        .frame(width: 500, height: 450)
+        .onAppear {
+            loadApiKeys()
+            loadSelectedService()
+        }
         .alert("API Key Saved", isPresented: $showingApiKeySaved) {
             Button("OK") { }
         } message: {
-            Text("Your OpenAI API key has been securely saved.")
+            Text("Your \(selectedService == "openai" ? "OpenAI" : "Mistral") API key has been securely saved.")
         }
         .alert("Error", isPresented: $showingApiKeyError) {
             Button("OK") { }
@@ -123,14 +157,36 @@ struct SettingsView: View {
         }
     }
     
-    private func loadApiKey() {
+    private func loadApiKeys() {
         if let savedKey = KeychainManager.load(key: .openAIAPIKey) {
-            apiKey = savedKey
+            openAIApiKey = savedKey
+        }
+        if let savedKey = KeychainManager.load(key: .mistralAPIKey) {
+            mistralApiKey = savedKey
         }
     }
     
+    private func loadSelectedService() {
+        selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+    }
+    
+    private func saveSelectedService(_ service: String) {
+        _ = KeychainManager.save(service, for: .transcriptionService)
+    }
+    
+    private var currentApiKey: String {
+        selectedService == "openai" ? openAIApiKey : mistralApiKey
+    }
+    
     private func saveApiKey() {
-        if KeychainManager.save(apiKey, for: .openAIAPIKey) {
+        let success: Bool
+        if selectedService == "openai" {
+            success = KeychainManager.save(openAIApiKey, for: .openAIAPIKey)
+        } else {
+            success = KeychainManager.save(mistralApiKey, for: .mistralAPIKey)
+        }
+        
+        if success {
             showingApiKeySaved = true
         } else {
             showingApiKeyError = true
@@ -141,10 +197,18 @@ struct SettingsView: View {
         isTestingConnection = true
         
         do {
-            // Test API key by making a simple request to OpenAI models endpoint
-            let url = URL(string: "https://api.openai.com/v1/models")!
-            var request = URLRequest(url: url)
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            let url: URL
+            var request: URLRequest
+            
+            if selectedService == "openai" {
+                url = URL(string: "https://api.openai.com/v1/models")!
+                request = URLRequest(url: url)
+                request.setValue("Bearer \(currentApiKey)", forHTTPHeaderField: "Authorization")
+            } else {
+                url = URL(string: "https://api.mistral.ai/v1/models")!
+                request = URLRequest(url: url)
+                request.setValue(currentApiKey, forHTTPHeaderField: "x-api-key")
+            }
             
             let (_, response) = try await URLSession.shared.data(for: request)
             
@@ -153,9 +217,9 @@ struct SettingsView: View {
             }
             
             if httpResponse.statusCode == 200 {
-                connectionResultMessage = "✅ Connection successful! Your API key is working."
+                connectionResultMessage = "✅ Connection successful! Your \(selectedService == "openai" ? "OpenAI" : "Mistral") API key is working."
             } else if httpResponse.statusCode == 401 {
-                connectionResultMessage = "❌ Invalid API key. Please check your OpenAI API key."
+                connectionResultMessage = "❌ Invalid API key. Please check your \(selectedService == "openai" ? "OpenAI" : "Mistral") API key."
             } else {
                 connectionResultMessage = "❌ API error: HTTP \(httpResponse.statusCode)"
             }

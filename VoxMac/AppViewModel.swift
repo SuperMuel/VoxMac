@@ -25,17 +25,38 @@ class AppViewModel: ObservableObject {
     private var recordingStartTime: Date?
     private let errorHandler = ErrorHandler.shared
     private let notificationManager = NotificationManager.shared
+    private var isCleaningUp = false
     
     init(transcriptionService: TranscriptionService? = nil) {
         if let service = transcriptionService {
             self.transcriptionService = service
         } else {
-            // Use OpenAI if API key exists, otherwise use mock
-            if let apiKey = KeychainManager.load(key: .openAIAPIKey), !apiKey.isEmpty {
-                self.transcriptionService = OpenAITranscriptionService(apiKey: apiKey)
-            } else {
+            do {
+                self.transcriptionService = try Self.createTranscriptionService()
+            } catch {
+                // Fallback to mock service for initialization, but transcription will fail properly
                 self.transcriptionService = MockTranscriptionService()
+                print("⚠️ Failed to create transcription service: \(error)")
             }
+        }
+    }
+    
+    private static func createTranscriptionService() throws -> TranscriptionService {
+        let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+        
+        switch selectedService {
+        case "mistral":
+            guard let apiKey = KeychainManager.load(key: .mistralAPIKey), !apiKey.isEmpty else {
+                throw TranscriptionError.invalidAPIKey
+            }
+            return MistralTranscriptionService(apiKey: apiKey)
+        case "openai":
+            guard let apiKey = KeychainManager.load(key: .openAIAPIKey), !apiKey.isEmpty else {
+                throw TranscriptionError.invalidAPIKey
+            }
+            return OpenAITranscriptionService(apiKey: apiKey)
+        default:
+            throw TranscriptionError.invalidAPIKey
         }
     }
     
@@ -73,6 +94,11 @@ class AppViewModel: ObservableObject {
     }
     
     func handleShortcutPressed() {
+        guard !isCleaningUp else {
+            print("Ignoring shortcut - app is cleaning up")
+            return
+        }
+        
         print("Shortcut pressed - Current status: \(status)")
         
         switch status {
@@ -125,9 +151,20 @@ class AppViewModel: ObservableObject {
     }
     
     private func performTranscription(audioURL: URL) async {
+        guard !isCleaningUp else {
+            print("Skipping transcription - app is cleaning up")
+            return
+        }
+        
         do {
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
             print("Transcription completed: \(transcribedText)")
+            
+            // Check again after async operation
+            guard !isCleaningUp else {
+                print("Skipping text insertion - app is cleaning up")
+                return
+            }
             
             // Calculate recording duration
             let duration: TimeInterval?
@@ -141,18 +178,32 @@ class AppViewModel: ObservableObject {
             // Insert text into active application
             let insertionMethod = TextInsertionManager.insertText(transcribedText)
             
-            // Save transcription to history
-            HistoryManager.shared.saveTranscription(text: transcribedText, duration: duration)
+            // Save transcription to history with provider/model info
+            HistoryManager.shared.saveTranscription(text: transcribedText, duration: duration, provider: transcriptionService.provider, model: transcriptionService.model)
             
             // Show success notification
             notificationManager.showTranscriptionComplete(transcribedText, insertedVia: insertionMethod)
             
             status = .idle
         } catch {
+            guard !isCleaningUp else {
+                print("Skipping error handling - app is cleaning up")
+                return
+            }
+            
             print("Transcription failed: \(error)")
             status = .error(message: error.localizedDescription)
             recordingStartTime = nil
             await errorHandler.handleTranscriptionError(error, audioURL: audioURL)
         }
+    }
+    
+    func cleanup() {
+        isCleaningUp = true
+        // Stop any ongoing recording
+        if case .recording = status {
+            _ = audioRecorder.stopRecording()
+        }
+        status = .idle
     }
 }

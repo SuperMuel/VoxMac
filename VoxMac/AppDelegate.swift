@@ -16,6 +16,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupKeyboardShortcuts()
     }
     
+    func applicationWillTerminate(_ notification: Notification) {
+        appViewModel?.cleanup()
+    }
+    
     private func setupDefaultShortcut() {
         // Set a default shortcut if none exists
         if KeyboardShortcuts.getShortcut(for: .toggleRecording) == nil {
@@ -39,3 +43,4 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 extension KeyboardShortcuts.Name {
     static let toggleRecording = Self("toggleRecording")
 }
+

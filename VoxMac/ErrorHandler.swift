@@ -54,9 +54,11 @@ class ErrorHandler: ObservableObject {
                     notificationManager.showTranscriptionError(error)
                 }
             case .invalidAPIKey:
+                let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+                let serviceName = selectedService == "openai" ? "OpenAI" : "Mistral"
                 notificationManager.showError(
                     title: "Invalid API Key",
-                    message: "Please check your OpenAI API key in Settings"
+                    message: "Please check your \(serviceName) API key in Settings"
                 )
             case .noInternetConnection:
                 notificationManager.showError(
@@ -77,9 +79,11 @@ class ErrorHandler: ObservableObject {
                 if let audioURL = audioURL {
                     await attemptRetry(audioURL: audioURL)
                 } else {
+                    let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+                    let serviceName = selectedService == "openai" ? "OpenAI" : "Mistral"
                     notificationManager.showError(
                         title: "Server Error",
-                        message: "OpenAI service is temporarily unavailable. Please try again later"
+                        message: "\(serviceName) service is temporarily unavailable. Please try again later"
                     )
                 }
             default:
@@ -124,8 +128,8 @@ class ErrorHandler: ObservableObject {
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
             
             // Success - insert text and save to history
-            TextInsertionManager.insertText(transcribedText)
-            HistoryManager.shared.saveTranscription(text: transcribedText)
+            _ = TextInsertionManager.insertText(transcribedText)
+            HistoryManager.shared.saveTranscription(text: transcribedText, provider: transcriptionService.provider, model: transcriptionService.model)
             
             notificationManager.showSuccess(
                 title: "Transcription Complete",
@@ -138,9 +142,22 @@ class ErrorHandler: ObservableObject {
     }
     
     private func createTranscriptionService() -> TranscriptionService {
-        if let apiKey = KeychainManager.load(key: .openAIAPIKey), !apiKey.isEmpty {
-            return OpenAITranscriptionService(apiKey: apiKey)
-        } else {
+        let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+        
+        switch selectedService {
+        case "mistral":
+            if let apiKey = KeychainManager.load(key: .mistralAPIKey), !apiKey.isEmpty {
+                return MistralTranscriptionService(apiKey: apiKey)
+            } else {
+                return MockTranscriptionService()
+            }
+        case "openai":
+            if let apiKey = KeychainManager.load(key: .openAIAPIKey), !apiKey.isEmpty {
+                return OpenAITranscriptionService(apiKey: apiKey)
+            } else {
+                return MockTranscriptionService()
+            }
+        default:
             return MockTranscriptionService()
         }
     }

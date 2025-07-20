@@ -13,6 +13,8 @@ class KeychainManager {
     
     enum Key: String {
         case openAIAPIKey = "openai_api_key"
+        case mistralAPIKey = "mistral_api_key"
+        case transcriptionService = "transcription_service"
     }
     
     static func save(_ value: String, for key: Key) -> Bool {

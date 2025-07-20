@@ -105,6 +105,17 @@ struct TranscriptionRowView: View {
     @State private var showingDeleteAlert = false
     @State private var showingCopiedAlert = false
     
+    private var providerDisplayName: String {
+        switch transcription.provider {
+        case "openai":
+            return "OpenAI"
+        case "mistral":
+            return "Mistral"
+        default:
+            return transcription.provider.capitalized
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header with timestamp and actions
@@ -118,6 +129,10 @@ struct TranscriptionRowView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                
+                Text("• \(providerDisplayName) \(transcription.model)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 
                 Spacer()
                 
