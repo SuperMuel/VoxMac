@@ -54,7 +54,7 @@ class ErrorHandler: ObservableObject {
                     notificationManager.showTranscriptionError(error)
                 }
             case .invalidAPIKey:
-                let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+                let selectedService = UserDefaultsManager.shared.transcriptionService
                 let serviceName = selectedService == "openai" ? "OpenAI" : "Mistral"
                 notificationManager.showError(
                     title: "Invalid API Key",
@@ -79,7 +79,7 @@ class ErrorHandler: ObservableObject {
                 if let audioURL = audioURL {
                     await attemptRetry(audioURL: audioURL)
                 } else {
-                    let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+                    let selectedService = UserDefaultsManager.shared.transcriptionService
                     let serviceName = selectedService == "openai" ? "OpenAI" : "Mistral"
                     notificationManager.showError(
                         title: "Server Error",
@@ -128,7 +128,7 @@ class ErrorHandler: ObservableObject {
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
             
             // Success - insert text and save to history
-            let selectedInsertionMethod = KeychainManager.getInsertionMethod()
+            let selectedInsertionMethod = InsertionMethod(rawValue: UserDefaultsManager.shared.insertionMethod) ?? .autoInsert
             _ = TextInsertionManager.insertText(transcribedText, method: selectedInsertionMethod)
             HistoryManager.shared.saveTranscription(text: transcribedText, provider: transcriptionService.provider, model: transcriptionService.model)
             
@@ -143,7 +143,7 @@ class ErrorHandler: ObservableObject {
     }
     
     private func createTranscriptionService() -> TranscriptionService {
-        let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+        let selectedService = UserDefaultsManager.shared.transcriptionService
         
         switch selectedService {
         case "mistral":

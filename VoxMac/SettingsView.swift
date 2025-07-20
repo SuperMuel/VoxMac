@@ -193,19 +193,20 @@ struct SettingsView: View {
     }
     
     private func loadSelectedService() {
-        selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+        selectedService = UserDefaultsManager.shared.transcriptionService
     }
     
     private func saveSelectedService(_ service: String) {
-        _ = KeychainManager.save(service, for: .transcriptionService)
+        UserDefaultsManager.shared.transcriptionService = service
     }
     
     private func loadInsertionMethod() {
-        selectedInsertionMethod = KeychainManager.getInsertionMethod()
+        let methodString = UserDefaultsManager.shared.insertionMethod
+        selectedInsertionMethod = InsertionMethod(rawValue: methodString) ?? .autoInsert
     }
     
     private func saveInsertionMethod(_ method: InsertionMethod) {
-        _ = KeychainManager.setInsertionMethod(method)
+        UserDefaultsManager.shared.insertionMethod = method.rawValue
     }
     
     private var currentApiKey: String {

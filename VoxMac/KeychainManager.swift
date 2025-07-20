@@ -37,8 +37,6 @@ class KeychainManager {
     enum Key: String {
         case openAIAPIKey = "openai_api_key"
         case mistralAPIKey = "mistral_api_key"
-        case transcriptionService = "transcription_service"
-        case insertionMethod = "insertion_method"
     }
     
     static func save(_ value: String, for key: Key) -> Bool {
@@ -92,15 +90,4 @@ class KeychainManager {
         return status == errSecSuccess
     }
     
-    static func getInsertionMethod() -> InsertionMethod {
-        guard let value = load(key: .insertionMethod),
-              let method = InsertionMethod(rawValue: value) else {
-            return .autoInsert // Default to auto-insert
-        }
-        return method
-    }
-    
-    static func setInsertionMethod(_ method: InsertionMethod) -> Bool {
-        return save(method.rawValue, for: .insertionMethod)
-    }
 }

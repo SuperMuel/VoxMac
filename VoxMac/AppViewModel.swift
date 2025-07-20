@@ -32,7 +32,7 @@ class AppViewModel: ObservableObject {
     }
     
     private static func createTranscriptionService() throws -> TranscriptionService {
-        let selectedService = KeychainManager.load(key: .transcriptionService) ?? "openai"
+        let selectedService = UserDefaultsManager.shared.transcriptionService
         
         switch selectedService {
         case "mistral":
@@ -168,7 +168,7 @@ class AppViewModel: ObservableObject {
             }
             
             // Insert text into active application
-            let selectedInsertionMethod = KeychainManager.getInsertionMethod()
+            let selectedInsertionMethod = InsertionMethod(rawValue: UserDefaultsManager.shared.insertionMethod) ?? .autoInsert
             let insertionResult = TextInsertionManager.insertText(transcribedText, method: selectedInsertionMethod)
             
             // Save transcription to history with provider/model info
