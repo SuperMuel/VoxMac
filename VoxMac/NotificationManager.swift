@@ -19,14 +19,14 @@ class NotificationManager: ObservableObject {
     private func setupNotifications() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
-                print("Notification permission error: \(error)")
+                Log.error(error, context: "Notification permission error", category: .notifications)
             }
-            print("Notification permission granted: \(granted)")
+            Log.info("Notification permission granted: \(granted)", category: .notifications)
             
             // Even if permission is denied, we can still show notifications
             // They just won't appear as system notifications, but we can log them
             if !granted {
-                print("ℹ️ Notifications not permitted - using console logging fallback")
+                Log.notice("Notifications not permitted - using console logging fallback", category: .notifications)
             }
         }
     }
@@ -113,15 +113,21 @@ class NotificationManager: ObservableObject {
     }
     
     private func showNotification(title: String, message: String, type: NotificationType) {
-        // Always log to console first
-        let emoji = type == .success ? "✅" : type == .error ? "❌" : "⚠️"
-        print("\(emoji) \(title): \(message)")
+        // Always log to unified logger first
+        switch type {
+        case .success:
+            Log.info("\(title): \(message)", category: .notifications)
+        case .warning:
+            Log.notice("\(title): \(message)", category: .notifications)
+        case .error:
+            Log.error("\(title): \(message)", category: .notifications)
+        }
         
         // Check if notifications are authorized
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized else {
-                // Fallback: just console logging (already done above)
-                print("📱 Notification not shown (permission denied) - logged to console instead")
+                // Fallback: nothing to show, already logged above
+                Log.notice("Notification not shown (permission denied)", category: .notifications)
                 return
             }
             
@@ -136,7 +142,7 @@ class NotificationManager: ObservableObject {
             
             UNUserNotificationCenter.current().add(request) { error in
                 if let error = error {
-                    print("Failed to show notification: \(error)")
+                    Log.error(error, context: "Failed to show notification", category: .notifications)
                 }
             }
         }

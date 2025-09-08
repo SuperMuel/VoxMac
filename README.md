@@ -45,3 +45,9 @@ Because I dindn't find any existing app that would support Mistral's Voxtral ðŸ¤
 
 ## Warning
 This app is 90% vibe coded. I never coded in Swift.
+
+## Logging
+- Uses Apple's Unified Logging with `os.Logger` via a small helper in `VoxMac/Log.swift`.
+- Categories: `app`, `audio`, `transcription`, `history`, `database`, `permissions`, `notifications`, `ui`, `insertion`, `network`, `keychain`.
+- View logs in Console.app: search for the appâ€™s bundle identifier and filter by category/level.
+- Debug messages are verbose and best viewed during development; info/notice/error/fault are useful in production builds.

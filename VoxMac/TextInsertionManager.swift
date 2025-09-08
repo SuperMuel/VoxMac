@@ -21,22 +21,22 @@ class TextInsertionManager {
     }
     
     private static func insertTextWithAutoInsert(_ text: String) -> String {
-        print("Attempting to insert text: \(text)")
+        Log.debug("Attempting to insert text of length: \(text.count)", category: .insertion)
         let hasPermissions = hasAccessibilityPermissions()
-        print("Accessibility permission check: \(hasPermissions ? "Granted" : "Denied")")
+        Log.info("Accessibility permission check: \(hasPermissions ? "Granted" : "Denied")", category: .permissions)
         
         if hasPermissions {
-            print("✅ Accessibility permissions granted - using direct text insertion")
+            Log.info("Accessibility permissions granted - using direct text insertion", category: .insertion)
             return insertTextViaAccessibilitySync(text)
         } else {
-            print("⚠️ Accessibility permissions not granted - falling back to clipboard")
+            Log.notice("Accessibility permissions not granted - falling back to clipboard", category: .insertion)
             insertTextViaClipboard(text)
             return "clipboard"
         }
     }
     
     private static func insertTextToClipboardOnly(_ text: String) -> String {
-        print("Copying text to clipboard: \(text)")
+        Log.info("Copying text to clipboard (length=\(text.count))", category: .insertion)
         
         DispatchQueue.main.async {
             let pasteboard = NSPasteboard.general
@@ -53,7 +53,7 @@ class TextInsertionManager {
     }
     
     private static func insertTextViaAccessibilitySync(_ text: String) -> String {
-        print("🔧 Inserting text via Accessibility APIs")
+        Log.debug("Inserting text via Accessibility APIs", category: .insertion)
         
         // Perform accessibility insertion synchronously on main thread
         guard Thread.isMainThread else {
@@ -66,13 +66,13 @@ class TextInsertionManager {
         var focusedElement: CFTypeRef?
         let systemWideElement = AXUIElementCreateSystemWide()
         
-        print("🔍 Getting focused UI element...")
+        Log.debug("Getting focused UI element...", category: .insertion)
         let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
-        print("🔍 Focus result: \(focusResult.rawValue)")
+        Log.debug("Focus result: \(focusResult.rawValue)", category: .insertion)
         
         if focusResult == .success, let element = focusedElement {
             let axElement = element as! AXUIElement
-            print("✅ Found focused element, attempting to insert text...")
+            Log.debug("Found focused element, attempting to insert text...", category: .insertion)
             
             // Step 1: Get current selected range
             var selectedRangeValue: CFTypeRef?
@@ -83,14 +83,14 @@ class TextInsertionManager {
                 AXValueGetValue(rangeAXValue as! AXValue, .cfRange, &cfRange)
                 let location = cfRange.location
                 let length = cfRange.length
-                print("📍 Current selection: location=\(location), length=\(length)")
+                Log.debug("Current selection: location=\(location), length=\(length)", category: .insertion)
                 
                 // Step 2: Get current text value
                 var currentValue: CFTypeRef?
                 let valueResult = AXUIElementCopyAttributeValue(axElement, kAXValueAttribute as CFString, &currentValue)
                 
                 if valueResult == .success, var currentText = currentValue as? String {
-                    print("📝 Current text length: \(currentText.count)")
+                    Log.debug("Current text length: \(currentText.count)", category: .insertion)
                     
                     // Step 3: Replace selected range with new text
                     if let startIndex = currentText.index(currentText.startIndex, offsetBy: location, limitedBy: currentText.endIndex),
@@ -99,7 +99,7 @@ class TextInsertionManager {
                         
                         // Step 4: Set new text value
                         let setValueResult = AXUIElementSetAttributeValue(axElement, kAXValueAttribute as CFString, currentText as CFString)
-                        print("🔧 Set value result: \(setValueResult.rawValue)")
+                        Log.debug("Set value result: \(setValueResult.rawValue)", category: .insertion)
                         
                         if setValueResult == .success {
                             // Step 5: Update selection range to after inserted text (cursor at end of insertion)
@@ -107,10 +107,10 @@ class TextInsertionManager {
                             var newRange = CFRangeMake(newLocation, 0)
                             if let newRangeValue = AXValueCreate(.cfRange, &newRange) {
                                 let setRangeResult = AXUIElementSetAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, newRangeValue)
-                                print("📍 Set new selection result: \(setRangeResult.rawValue)")
+                                Log.debug("Set new selection result: \(setRangeResult.rawValue)", category: .insertion)
                                 
                                 if setRangeResult == .success {
-                                    print("✅ Text inserted successfully via Accessibility at cursor")
+                                    Log.info("Text inserted successfully via Accessibility at cursor", category: .insertion)
                                     return "accessibility"
                                 }
                             }
@@ -119,18 +119,18 @@ class TextInsertionManager {
                 }
             }
             
-            print("❌ Accessibility insertion failed (unsupported element or error). Falling back to clipboard.")
+            Log.notice("Accessibility insertion failed (unsupported element or error). Falling back to clipboard.", category: .insertion)
             insertTextViaClipboard(text)
             return "clipboard (accessibility fallback)"
         } else {
-            print("❌ Could not get focused element (error \(focusResult.rawValue)), falling back to clipboard")
+            Log.notice("Could not get focused element (error \(focusResult.rawValue)), falling back to clipboard", category: .insertion)
             insertTextViaClipboard(text)
             return "clipboard (no focus)"
         }
     }
     
     private static func insertTextViaClipboard(_ text: String) {
-        print("Inserting text via clipboard fallback")
+        Log.debug("Inserting text via clipboard fallback", category: .insertion)
         
         DispatchQueue.main.async {
             // Save current clipboard content

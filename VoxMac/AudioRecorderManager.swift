@@ -31,7 +31,7 @@ class AudioRecorderManager: NSObject, ObservableObject {
             audioRecorder?.isMeteringEnabled = true
             audioRecorder?.record()
             
-            print("Recording started at: \(audioURL.path)")
+            Log.info("Recording started at: \(audioURL.path)", category: .audio)
             return audioURL
         } catch {
             throw AudioRecorderError.failedToStartRecording(error)
@@ -40,13 +40,13 @@ class AudioRecorderManager: NSObject, ObservableObject {
     
     func stopRecording() -> URL? {
         guard let recorder = audioRecorder, recorder.isRecording else {
-            print("No active recording to stop")
+            Log.notice("No active recording to stop", category: .audio)
             return nil
         }
         
         recorder.stop()
         let url = recorder.url
-        print("Recording stopped, saved to: \(url.path)")
+        Log.info("Recording stopped, saved to: \(url.path)", category: .audio)
         return url
     }
     
@@ -77,15 +77,15 @@ class AudioRecorderManager: NSObject, ObservableObject {
 extension AudioRecorderManager: AVAudioRecorderDelegate {
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         if flag {
-            print("Recording finished successfully")
+            Log.info("Recording finished successfully", category: .audio)
         } else {
-            print("Recording failed")
+            Log.error("Recording failed", category: .audio)
         }
     }
     
     func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
         if let error = error {
-            print("Recording encode error: \(error)")
+            Log.error(error, context: "Recording encode error", category: .audio)
         }
     }
 }

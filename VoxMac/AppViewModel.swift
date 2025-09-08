@@ -85,11 +85,11 @@ class AppViewModel: ObservableObject {
     
     func handleShortcutPressed() {
         guard !isCleaningUp else {
-            print("Ignoring shortcut - app is cleaning up")
+            Log.notice("Ignoring shortcut - app is cleaning up", category: .app)
             return
         }
         
-        print("Shortcut pressed - Current status: \(status)")
+        Log.info("Shortcut pressed - Current status: \(status)", category: .app)
         
         switch status {
         case .idle:
@@ -104,7 +104,7 @@ class AppViewModel: ObservableObject {
     }
     
     private func startRecording() async {
-        print("Starting recording...")
+        Log.info("Starting recording...", category: .audio)
         
         // Check network connectivity for transcription services
         if !errorHandler.validateNetworkConnectivity() {
@@ -119,9 +119,9 @@ class AppViewModel: ObservableObject {
         
         do {
             currentRecordingURL = try await audioRecorder.startRecording()
-            print("Recording started successfully")
+            Log.info("Recording started successfully", category: .audio)
         } catch {
-            print("Failed to start recording: \(error)")
+            Log.error(error, context: "Failed to start recording", category: .audio)
             status = .error(message: error.localizedDescription)
             recordingStartTime = nil
             errorHandler.handleRecordingError(error)
@@ -129,7 +129,7 @@ class AppViewModel: ObservableObject {
     }
     
     private func stopRecording() async {
-        print("Stopping recording...")
+        Log.info("Stopping recording...", category: .audio)
         status = .processing
         
         guard let recordingURL = audioRecorder.stopRecording() else {
@@ -142,7 +142,7 @@ class AppViewModel: ObservableObject {
     
     private func performTranscription(audioURL: URL) async {
         guard !isCleaningUp else {
-            print("Skipping transcription - app is cleaning up")
+            Log.notice("Skipping transcription - app is cleaning up", category: .app)
             return
         }
         
@@ -150,11 +150,11 @@ class AppViewModel: ObservableObject {
             // Create transcription service dynamically to pick up current settings
             let transcriptionService = try Self.createTranscriptionService()
             let transcribedText = try await transcriptionService.transcribe(audioURL: audioURL)
-            print("Transcription completed: \(transcribedText)")
+            Log.info("Transcription completed (length=\(transcribedText.count))", category: .transcription)
             
             // Check again after async operation
             guard !isCleaningUp else {
-                print("Skipping text insertion - app is cleaning up")
+                Log.notice("Skipping text insertion - app is cleaning up", category: .app)
                 return
             }
             
@@ -180,11 +180,11 @@ class AppViewModel: ObservableObject {
             status = .idle
         } catch {
             guard !isCleaningUp else {
-                print("Skipping error handling - app is cleaning up")
+                Log.notice("Skipping error handling - app is cleaning up", category: .app)
                 return
             }
             
-            print("Transcription failed: \(error)")
+            Log.error(error, context: "Transcription failed", category: .transcription)
             status = .error(message: error.localizedDescription)
             recordingStartTime = nil
             await errorHandler.handleTranscriptionError(error, audioURL: audioURL)

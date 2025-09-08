@@ -54,6 +54,9 @@ Temporary Items
 .ionide
 
 ### Xcode ###
+## Build generated
+DerivedData/
+
 ## User settings
 xcuserdata/
 

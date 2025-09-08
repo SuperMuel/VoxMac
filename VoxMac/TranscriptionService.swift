@@ -33,7 +33,7 @@ class OpenAITranscriptionService: TranscriptionService {
     }
     
     func transcribe(audioURL: URL) async throws -> String {
-        print("Starting OpenAI transcription for: \(audioURL.path)")
+        Log.info("Starting OpenAI transcription for: \(audioURL.path)", category: .transcription)
         
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
             throw TranscriptionError.audioFileNotFound
@@ -68,7 +68,7 @@ class OpenAITranscriptionService: TranscriptionService {
             switch httpResponse.statusCode {
             case 200:
                 let transcriptionResponse = try JSONDecoder().decode(OpenAITranscriptionResponse.self, from: data)
-                print("OpenAI transcription completed: \(transcriptionResponse.text)")
+                Log.info("OpenAI transcription completed", category: .transcription)
                 return transcriptionResponse.text
             case 401:
                 throw TranscriptionError.invalidAPIKey
@@ -127,7 +127,7 @@ class MistralTranscriptionService: TranscriptionService {
     }
     
     func transcribe(audioURL: URL) async throws -> String {
-        print("Starting Mistral transcription for: \(audioURL.path) with model: \(model)")
+        Log.info("Starting Mistral transcription for: \(audioURL.path) with model: \(model)", category: .transcription)
         
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
             throw TranscriptionError.audioFileNotFound
@@ -162,7 +162,7 @@ class MistralTranscriptionService: TranscriptionService {
             switch httpResponse.statusCode {
             case 200:
                 let transcriptionResponse = try JSONDecoder().decode(MistralTranscriptionResponse.self, from: data)
-                print("Mistral transcription completed: \(transcriptionResponse.text)")
+                Log.info("Mistral transcription completed", category: .transcription)
                 return transcriptionResponse.text
             case 401:
                 throw TranscriptionError.invalidAPIKey

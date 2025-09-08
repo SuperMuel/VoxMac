@@ -33,12 +33,12 @@ class ErrorHandler: ObservableObject {
     }
     
     func handleRecordingError(_ error: Error) {
-        print("Recording error: \(error)")
+        Log.error(error, context: "Recording error", category: .audio)
         notificationManager.showRecordingError(error)
     }
     
     func handleTranscriptionError(_ error: Error, audioURL: URL? = nil) async {
-        print("Transcription error: \(error)")
+        Log.error(error, context: "Transcription error", category: .transcription)
         
         if let transcriptionError = error as? TranscriptionError {
             switch transcriptionError {

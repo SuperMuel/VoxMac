@@ -39,15 +39,15 @@ class HistoryManager: ObservableObject {
                 }
             }
             
-            print("✅ Database initialized at: \(dbPath)")
+            Log.info("Database initialized at: \(dbPath)", category: .database)
         } catch {
-            print("❌ Database setup failed: \(error)")
+            Log.error(error, context: "Database setup failed", category: .database)
         }
     }
     
     func saveTranscription(text: String, duration: TimeInterval? = nil, provider: String, model: String) {
         guard let dbQueue = dbQueue else {
-            print("❌ Database not available")
+            Log.error("Database not available", category: .database)
             return
         }
         
@@ -64,9 +64,9 @@ class HistoryManager: ObservableObject {
             // Force UI update
             objectWillChange.send()
             
-            print("✅ Transcription saved to history")
+            Log.info("Transcription saved to history", category: .history)
         } catch {
-            print("❌ Failed to save transcription: \(error)")
+            Log.error(error, context: "Failed to save transcription", category: .history)
         }
     }
     
@@ -79,9 +79,9 @@ class HistoryManager: ObservableObject {
             }
             
             transcriptions = records
-            print("✅ Loaded \(records.count) transcriptions from history")
+            Log.info("Loaded \(records.count) transcriptions from history", category: .history)
         } catch {
-            print("❌ Failed to load transcriptions: \(error)")
+            Log.error(error, context: "Failed to load transcriptions", category: .history)
             transcriptions = []
         }
     }
@@ -97,9 +97,9 @@ class HistoryManager: ObservableObject {
             // Update local array
             transcriptions.removeAll { $0.id == record.id }
             
-            print("✅ Transcription deleted from history")
+            Log.info("Transcription deleted from history", category: .history)
         } catch {
-            print("❌ Failed to delete transcription: \(error)")
+            Log.error(error, context: "Failed to delete transcription", category: .history)
         }
     }
     
@@ -112,9 +112,9 @@ class HistoryManager: ObservableObject {
             }
             
             transcriptions.removeAll()
-            print("✅ All transcriptions deleted from history")
+            Log.notice("All transcriptions deleted from history", category: .history)
         } catch {
-            print("❌ Failed to delete all transcriptions: \(error)")
+            Log.error(error, context: "Failed to delete all transcriptions", category: .history)
         }
     }
     
