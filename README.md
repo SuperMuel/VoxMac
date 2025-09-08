@@ -38,10 +38,10 @@ Because I dindn't find any existing app that would support Mistral's Voxtral ðŸ¤
 
 
 ## TODO
-- Allow model selection (not just provider). Useful for gpt-4o-transcribe or gpt-4o-mini-transcribe
-- Add ElevenLab's Scribe
-- Allow Custom vocabulary or custom prompt for elligible models
-- Queue service for async processing of transcription requests when offline
+- [x] Allow model selection (not just provider). Useful for gpt-4o-transcribe or gpt-4o-mini-transcribe
+- [ ] Add ElevenLab's Scribe
+- [ ] Allow Custom vocabulary or custom prompt for elligible models
+- [ ] Queue service for async processing of transcription requests when offline
 
 ## Warning
 This app is 90% vibe coded. I never coded in Swift.
